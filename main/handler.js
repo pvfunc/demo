@@ -1,9 +1,11 @@
 'use strict';
 
 const handler = async (event, context) => {
-    await new Promise(resolve => setTimeout(resolve, 10000));
+    const request = "Request: " + JSON.stringify(event);
+    console.log(request)
 
-    const reply = "Long function executed!"
+    const reply = "Callback function.\n" +
+        `${request}`
 
     return context
         .status(200)
