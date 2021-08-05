@@ -1,46 +1,63 @@
-## Шаблон: python38-graphql
+## Шаблон: java11-springboot
 
-```
-Python 3.8.6 
-pip 19.3.1
-```
-Для корректной работы в функции должен быть скрипт `handler/handler.py` с функцией `handle` принимающей на вход `FunctionRequest` и возвращающий `FunctionResponse`.  
-В `FunctionsRequest` содержится `payload`(пришедший запрос) и `headers`(заголовки).  
-Дополнительная информация (path, queryParams, Content-Type и т.д.) содержатся в заголовках.  
-В `FunctionsResponse` можно передать тело ответа, статус и заголовки.  
+Шаблон Java 11 Spring Boot использует maven в качестве системы сборки проекта.
 
-Для мониторинга метрик используется библиотека [prometheus/client_python](https://github.com/prometheus/client_python).  
-Пример регистрации метрики можно увидеть в [`handler.py`](./handler/handler.py).
+Maven: 3.6.3
+
+Java: OpenJDK 11
+
+Spring Boot: 2.3.1.RELEASE
+
+
+### Структура проекта
+
+    root
+     ├ src                              maven source route
+     │ └ main
+     │   ├ java                         implement your function here
+     │   │ ├ ...
+     │   │ ...
+     │   └ resources
+     │     └ config.yaml               write configuration properties used in scripts in this file
+     │                                  config.yaml must not be renamed
+     │
+     └ pom.xml                          place dependencies of your function here
+
 
 ### Подключение внешних зависимостей
-Внешние зависимости могут быть определены в [`requirements.txt`](./requirements.txt) проекта функции.
 
-### Взаимодействие с DATASPACE
-⚠️ **При запуске должны быть определены переменные среды DATASPACE_URL, APP_KEY, APP_SECRET** ⚠️
+Внешние зависимости могут быть определены в ```./pom.xml``` проекта функции.
 
-Dataspace поддерживает взаимодействие по протоколу GraphQL. Поэтому для вызова в данном шаблоне используется библиотека [gql](https://github.com/graphql-python/gql)
-
-Вызовы DataSpace, идущие через API-Gateway, должны быть подписаны ключом (APP_KEY) и секретом (APP_SECRET) из переменных среды.  
-Для этого используется [signer.py](./handler/apig_sdk/signer.py).  
-
-В [`apolloClient`](./handler/handler.py) создается клиент `client` настроенный на DATASPACE_URL.  
-Через него можно вызывать сервис Dataspace, выполнять различные операции - query, mutate и т.д.  
-Запросы проходящие через этого клиента подписываются классом `DataspaceAuth`.
-
-Пример подписи и вызова Dataspace можно увидеть в [handler.py](./handler/handler.py)
-
+    
 ### Конфигурирование через ConfigMap:
 Для возможности конфигурирования функции через ConfigMap пользователю необходимо:
-1) Определить свойства в файле, например: `properties.ini`
+1) Определить свойства в файле ```src/main/resources/config.yaml```
 2) В ```functions.yaml``` указать конфигурационные файлы для монтирования.
 ```yaml
     configs:
-      - name: python38-graphql-example              # Имя конфигурации. В UI OSE ConfigMap будет называться <имя-функции>-cm-<имя конфигурации>
+      - name: springboot-example              # Имя конфигурации. В UI OSE ConfigMap будет называться <имя-функции>-cm-<имя конфигурации>
         files:                                # Список файлов для монтирования
-          - properties.ini    # Полный путь до файла относительно директории с функцией
+          - src/main/resources/config.yaml    # Полный путь до файла относительно директории с функцией
 ```
-Данный файл будет смонтирован в папку `/app/config`.  
-Далее в функции можете использовать этот файл, например через библиотеку [configparser](https://docs.python.org/3/library/configparser.html)
 
-### Тестирование
-⚠️ **При сборке функции будет запущен скрипт [`./handler_tests.py`](./test_handler.py). Если тесты не пройдут, то функция не развернется.** ⚠️
+## Локальная отладка функции
+### Prerequisites
+На рабочей станции разработчика должны быть установлены:
+ - `JDK 11`
+ - `Maven 3.5.0+` 
+
+### Локальный запуск приложения 
+Если вы используете переменные в файле [config.yaml](./src/main/resources/config.yaml) то для запуска Springboot приложения необходимо определить переменную среды:  
+`--spring.config.location=<путь до config.yaml в папке resources>`
+
+Далее можно запустить Main класс [App.java](./src/main/java/sbp/ts/faas/templates/springboot/pure/App.java) и вызывать по HTTP (с помощью CURL, Postman и т.д.) необходимые контроллеры.
+
+### Локальное тестирование
+Если вы используете переменные в файле [config.yaml](./src/main/resources/config.yaml) то для запуска тестов необходимо указать спрингу на него. Например, как это сделано в [ControllerTest](./src/test/java/sbp/ts/faas/templates/springboot/pure/ControllerTest.java).
+
+Во всем остальном тестирование фукнции никак не отличается от тестирования любого Springboot приложения.  
+Документация по тестированию в Springboot: [https://docs.spring.io](https://docs.spring.io/spring-boot/docs/2.3.1.RELEASE/reference/html/spring-boot-features.html#boot-features-testing)
+
+
+
+Во время деплоя функции будут запущены тесты с помощью мавена, если тесты не пройдут - функция не задеплоится.
